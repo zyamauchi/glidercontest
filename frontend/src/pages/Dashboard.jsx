@@ -16,7 +16,7 @@ export default function Dashboard() {
     apiFetch('/contests').then(setContests).catch(console.error).finally(() => setLoading(false));
   }, [profile]);
 
-  const profileComplete = profile?.full_name && (isCD || profile?.glider_model);
+  const profileComplete = profile?.full_name;
 
   return (
     <PageWrap>
