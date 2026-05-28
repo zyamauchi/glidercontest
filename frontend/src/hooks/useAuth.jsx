@@ -8,20 +8,24 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile(u) {
-    if (!u) { setProfile(null); return; }
-    const { data } = await supabase.from('profiles').select('*').eq('id', u.id).single();
-    setProfile(data);
+  async function loadProfile(session) {
+    if (!session) { setProfile(null); return; }
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      if (res.ok) setProfile(await res.json());
+    } catch {}
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      loadProfile(session?.user ?? null).finally(() => setLoading(false));
+      loadProfile(session).finally(() => setLoading(false));
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      loadProfile(session?.user ?? null);
+      loadProfile(session);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -35,13 +39,18 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (data.user) {
-      await supabase.from('profiles').insert({ id: data.user.id, email, role });
+      await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: data.user.id, email, role })
+      });
     }
     return data;
   }
 
   async function signOut() {
     await supabase.auth.signOut();
+    setProfile(null);
   }
 
   return (
