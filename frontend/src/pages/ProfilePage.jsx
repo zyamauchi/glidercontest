@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../lib/api';
-import { PageWrap, TopNav, Card, Field, Input, Select, Btn, InfoBox, SectionTitle, C, fmtTime } from '../components/ui';
+import { PageWrap, TopNav, Card, Field, Input, Select, Btn, InfoBox, SectionTitle, C } from '../components/ui';
 
 export default function ProfilePage() {
-  const { user, profile, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     full_name: '', competition_number: '', n_number: '',
@@ -21,27 +21,27 @@ export default function ProfilePage() {
   const searchTimeout = useRef();
 
   useEffect(() => {
-    if (profile) {
+    apiFetch('/auth/me').then(p => {
       setForm({
-        full_name: profile.full_name || '',
-        competition_number: profile.competition_number || '',
-        n_number: profile.n_number || '',
-        glider_manufacturer: profile.glider_manufacturer || '',
-        glider_model: profile.glider_model || '',
-        takeoff_weight_lbs: profile.takeoff_weight_lbs || '',
-        wl_formula: profile.wl_formula || 'none',
+        full_name: p.full_name || '',
+        competition_number: p.competition_number || '',
+        n_number: p.n_number || '',
+        glider_manufacturer: p.glider_manufacturer || '',
+        glider_model: p.glider_model || '',
+        takeoff_weight_lbs: p.takeoff_weight_lbs || '',
+        wl_formula: p.wl_formula || 'none',
       });
-      if (profile.glider_manufacturer && profile.glider_model) {
-        setGliderSearch(`${profile.glider_manufacturer} ${profile.glider_model}`);
+      if (p.glider_manufacturer && p.glider_model) {
+        setGliderSearch(`${p.glider_manufacturer} ${p.glider_model}`);
         setSelectedGlider({
-          manufacturer: profile.glider_manufacturer,
-          model: profile.glider_model,
-          handicap: profile.base_handicap,
-          refWeight: profile.ref_weight_lbs,
+          manufacturer: p.glider_manufacturer,
+          model: p.glider_model,
+          handicap: p.base_handicap,
+          refWeight: p.ref_weight_lbs,
         });
       }
-    }
-  }, [profile]);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     clearTimeout(searchTimeout.current);
@@ -99,18 +99,16 @@ export default function ProfilePage() {
         </Card>
 
         <Card>
-          <SectionTitle>Glider & Handicap</SectionTitle>
+          <SectionTitle>Glider and Handicap</SectionTitle>
           <Field label="Search Glider (SSA Handicap List)">
             <div style={{ position:'relative' }}>
-              <Input value={gliderSearch} onChange={setGliderSearch} placeholder="Type manufacturer or model…" />
+              <Input value={gliderSearch} onChange={setGliderSearch} placeholder="Type manufacturer or model..." />
               {gliderResults.length > 0 && (
-                <div style={{ position:'absolute', top:'100%', left:0, right:0, background:C.cloud, border:`1.5px solid ${C.cloudEdge}`, borderRadius:8, boxShadow:'0 4px 20px rgba(13,52,97,0.15)', zIndex:100, maxHeight:260, overflowY:'auto' }}>
+                <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'white', border:`1.5px solid ${C.cloudEdge}`, borderRadius:8, boxShadow:'0 4px 20px rgba(13,52,97,0.15)', zIndex:100, maxHeight:260, overflowY:'auto' }}>
                   {gliderResults.map((g, i) => (
-                    <div key={i} onClick={() => selectGlider(g)} style={{ padding:'9px 14px', cursor:'pointer', borderBottom:`1px solid ${C.skyLight}`, transition:'background 0.1s' }}
-                      onMouseEnter={e=>e.currentTarget.style.background=C.skyPale}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <div key={i} onClick={() => selectGlider(g)} style={{ padding:'9px 14px', cursor:'pointer', borderBottom:`1px solid ${C.skyLight}` }}>
                       <div style={{ fontWeight:600, color:C.navy, fontSize:13 }}>{g.manufacturer} {g.model}</div>
-                      <div style={{ fontSize:11, color:C.navyFaint }}>HC: {g.handicap} · Ref weight: {g.refWeight} lbs · Span: {g.span}m</div>
+                      <div style={{ fontSize:11, color:C.navyFaint }}>HC: {g.handicap} · Ref weight: {g.refWeight} lbs</div>
                     </div>
                   ))}
                 </div>
@@ -119,13 +117,12 @@ export default function ProfilePage() {
           </Field>
 
           {selectedGlider && (
-            <InfoBox>
-              <strong>{selectedGlider.manufacturer} {selectedGlider.model}</strong><br />
-              Base handicap: <strong>{selectedGlider.handicap}</strong> · Reference weight: {selectedGlider.refWeight} lbs
-            </InfoBox>
+            <div style={{ background:C.skyPale, border:`1px solid ${C.cloudEdge}`, borderRadius:8, padding:'10px 14px', fontSize:12, color:'#0369a1', marginBottom:12 }}>
+              <strong>{selectedGlider.manufacturer} {selectedGlider.model}</strong> · Base HC: <strong>{selectedGlider.handicap}</strong> · Ref weight: {selectedGlider.refWeight} lbs
+            </div>
           )}
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginTop:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginTop:8 }}>
             <Field label="Takeoff Weight (lbs)" hint="Used for wing loading adjustment">
               <Input type="number" value={form.takeoff_weight_lbs} onChange={v=>setForm(f=>({...f,takeoff_weight_lbs:v}))} placeholder="e.g. 850" />
             </Field>
@@ -140,20 +137,20 @@ export default function ProfilePage() {
 
           {adjHC != null && (
             <div style={{ background:C.skyPale, border:`1px solid ${C.cloudEdge}`, borderRadius:8, padding:'12px 16px', marginTop:4, display:'flex', gap:24 }}>
-              <div><div style={{ fontSize:10, color:C.navyFaint, textTransform:'uppercase', letterSpacing:'0.08em' }}>Base HC</div><div style={{ fontSize:20, fontWeight:800, color:C.navy }}>{selectedGlider?.handicap?.toFixed(4)}</div></div>
+              <div><div style={{ fontSize:10, color:C.navyFaint, textTransform:'uppercase' }}>Base HC</div><div style={{ fontSize:20, fontWeight:800, color:C.navy }}>{selectedGlider?.handicap?.toFixed(4)}</div></div>
               {form.wl_formula !== 'none' && <>
                 <div style={{ fontSize:24, color:C.navyFaint, alignSelf:'center' }}>→</div>
-                <div><div style={{ fontSize:10, color:C.navyFaint, textTransform:'uppercase', letterSpacing:'0.08em' }}>Adjusted HC</div><div style={{ fontSize:20, fontWeight:800, color:C.skyTop }}>{adjHC.toFixed(4)}</div></div>
+                <div><div style={{ fontSize:10, color:C.navyFaint, textTransform:'uppercase' }}>Adjusted HC</div><div style={{ fontSize:20, fontWeight:800, color:C.skyTop }}>{adjHC.toFixed(4)}</div></div>
               </>}
             </div>
           )}
         </Card>
 
-        {error && <InfoBox type="warn">{error}</InfoBox>}
-        {msg   && <InfoBox>{msg}</InfoBox>}
+        {error && <div style={{ background:'#fef3c7', border:'1px solid #fde68a', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#92400e', marginTop:8 }}>{error}</div>}
+        {msg   && <div style={{ background:'#e0f2fe', border:'1px solid #bae6fd', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#0369a1', marginTop:8 }}>{msg}</div>}
 
-        <div style={{ display:'flex', gap:12, marginTop:8 }}>
-          <Btn onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Profile'}</Btn>
+        <div style={{ display:'flex', gap:12, marginTop:16 }}>
+          <Btn onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</Btn>
           <Btn variant="ghost" onClick={() => navigate('/dashboard')}>Back to Dashboard</Btn>
         </div>
       </div>
