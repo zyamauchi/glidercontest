@@ -4,7 +4,7 @@
     "buildCommand": "npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "npx serve dist -l $PORT --config serve.json",
+    "startCommand": "npm run preview -- --port $PORT --host",
     "restartPolicyType": "ON_FAILURE"
   }
 }
