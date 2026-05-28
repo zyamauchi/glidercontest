@@ -79,8 +79,3 @@ function StatusPill({ status }) {
   return <span style={{ background:s.bg, color:s.color, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700 }}>{s.label}</span>;
 }
 
-const C = {
-  skyTop:'#1a6fba', skyPale:'#eaf6fd', cloudEdge:'#cce7f5', cloud:'#fff',
-  navy:'#0d3461', navyMid:'#1a5a96', navyLight:'#3d7ab5', navyFaint:'#7aaecf',
-  orange:'#c2410c', green:'#047857', greenBg:'#d1fae5', grayBg:'#f1f5f9', gray:'#64748b',
-};
