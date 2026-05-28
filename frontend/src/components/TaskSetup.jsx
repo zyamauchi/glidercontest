@@ -33,8 +33,10 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   useEffect(() => { if (window.L && leafletRef.current) renderMarkers(); }, [library, taskPoints]);
 
   function initMap() {
-    if (leafletRef.current || !mapRef.current) return;
-    const L = window.L;
+if (leafletRef.current) return;
+if (!mapRef.current) { setTimeout(initMap, 200); return; }
+ 
+   const L = window.L;
     const map = L.map(mapRef.current).setView([36.9,-120.1], 8);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     leafletRef.current = map;
