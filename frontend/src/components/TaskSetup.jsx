@@ -25,20 +25,16 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   useEffect(() => { taskPointsRef.current = taskPoints; }, [taskPoints]);
 
   // Init map once
-  useEffect(() => {
-    function tryInit() {
-      if (!window.L || !mapRef.current || mapInstanceRef.current) return;
-      const L = window.L;
-      const map = L.map(mapRef.current).setView([36.9, -120.1], 8);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
-      mapInstanceRef.current = map;
-    }
-    if (window.L) { setTimeout(tryInit, 100); return; }
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload = () => setTimeout(tryInit, 100);
-    document.head.appendChild(s);
-  }, []);
+  useEffect(() => 
+useEffect(() => {
+    if (!mapRef.current) return;
+    if (mapInstanceRef.current) return;
+    if (!window.L) return;
+    const map = window.L.map(mapRef.current).setView([36.9, -120.1], 8);
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
+    mapInstanceRef.current = map;
+  });
+, []);
 
   // Redraw markers whenever library or taskPoints change
   useEffect(() => {
