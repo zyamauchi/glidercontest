@@ -55,12 +55,13 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
     markersRef.current.forEach((marker, i) => {
       const tp = libraryRef.current[i];
       if (!tp) return;
-      const idx = pts.findIndex(p => p.code === tp.code);
-      const inTask = idx !== -1;
-      const isStart = idx === 0;
-      const isFinish = inTask && idx === pts.length - 1;
-      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : inTask ? '#1a6fba' : '#94a3b8';
-      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '';
+      const taskIdx = pts.findIndex(p => p.code === tp.code);
+      const inTask = taskIdx !== -1;
+      const isStart = inTask && taskIdx === 0;
+      const isFinish = inTask && taskIdx === pts.length - 1 && pts.length > 1;
+      const isTp = inTask && !isStart && !isFinish;
+      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : isTp ? '#1a6fba' : '#94a3b8';
+      const label = isStart ? 'S' : isFinish ? 'F' : isTp ? String(taskIdx) : '';
       marker.setIcon(makeIcon(color, label));
     });
     // Update route line
@@ -85,10 +86,11 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
     lib.forEach(tp => {
       const idx = pts.findIndex(p => p.code === tp.code);
       const inTask = idx !== -1;
-      const isStart = idx === 0;
-      const isFinish = inTask && idx === pts.length - 1;
-      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : inTask ? '#1a6fba' : '#94a3b8';
-      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '';
+      const isStart = inTask && idx === 0;
+      const isFinish = inTask && idx === pts.length - 1 && pts.length > 1;
+      const isTp = inTask && !isStart && !isFinish;
+      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : isTp ? '#1a6fba' : '#94a3b8';
+      const label = isStart ? 'S' : isFinish ? 'F' : isTp ? String(idx) : '';
       const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
       marker.on('click', () => {
         setTaskPoints(prev => {
