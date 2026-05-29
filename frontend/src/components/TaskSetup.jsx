@@ -34,7 +34,7 @@ useEffect(() => {
     window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
     mapInstanceRef.current = map;
   });
-, []);
+
 
   // Redraw markers whenever library or taskPoints change
   useEffect(() => {
