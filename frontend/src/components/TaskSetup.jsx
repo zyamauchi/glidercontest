@@ -15,7 +15,8 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const fileRef = useRef();
-  const mapDivRef = useRef(null);
+  const mapDivRef = useRef(null);cd ~/glidercontest
+nano frontend/src/components/TaskSetup.jsx
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const routeRef = useRef(null);
@@ -64,17 +65,15 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
       const isStart = idx === 0;
       const isFinish = inTask && idx === pts.length - 1;
       const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : inTask ? '#1a6fba' : '#94a3b8';
-      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '·';
+      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '';
       const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
-      marker.on('click', () => {
-        const cur = taskPointsRef.current;
-        const alreadyIn = cur.findIndex(p => p.code === tp.code) !== -1;
-        if (alreadyIn) {
-          setTaskPoints(prev => prev.filter(p => p.code !== tp.code));
-        } else {
-          setTaskPoints(prev => [...prev, { ...tp, radiusType:'handicapped', radius:1 }]);
-        }
-      });
+marker.on('click', () => {
+        setTaskPoints(prev => {
+          const alreadyIn = prev.findIndex(p => p.code === tp.code) !== -1;
+          if (alreadyIn) return prev.filter(p => p.code !== tp.code);
+          return [...prev, { ...tp, radiusType:'handicapped', radius:1 }];
+        });
+      });    
       marker.bindTooltip(`${tp.code}: ${tp.name}`, { direction:'top' });
       marker.addTo(map);
       markersRef.current.push(marker);
