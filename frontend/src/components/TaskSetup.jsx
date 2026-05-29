@@ -72,7 +72,8 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   }, [taskPoints, mapReady]);
 
   function makeIcon(color, label) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.5 0 10C0 17.5 10 26 10 26S20 17.5 20 10C20 4.5 15.5 0 10 0Z" fill="${color}" stroke="white" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="${label.length>1?'7':'10'}" font-weight="bold" fill="white" font-family="Arial,sans-serif">${label}</text></svg>`;
+    const textEl = label ? `<text x="10" y="14" text-anchor="middle" font-size="${label.length>1?'7':'10'}" font-weight="bold" fill="white" font-family="Arial,sans-serif">${label}</text>` : '';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.5 0 10C0 17.5 10 26 10 26S20 17.5 20 10C20 4.5 15.5 0 10 0Z" fill="${color}" stroke="white" stroke-width="1.5"/>${textEl}</svg>`;
     return window.L.divIcon({ className:'', html:svg, iconSize:[20,26], iconAnchor:[10,26], popupAnchor:[0,-26] });
   }
 
