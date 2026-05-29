@@ -20,8 +20,10 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   const markersRef = useRef([]);
   const routeRef = useRef(null);
   const taskPointsRef = useRef([]);
+  const libraryRef = useRef([]);
 
   useEffect(() => { taskPointsRef.current = taskPoints; }, [taskPoints]);
+  useEffect(() => { libraryRef.current = library; }, [library]);
 
   // Initialize map when div is available
   useEffect(() => {
@@ -40,11 +42,33 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
     }
   }, [mapMode]); // re-run when switching to map mode
 
-  // Redraw markers when library or taskPoints change
+  // Draw markers when library loads
   useEffect(() => {
     if (!mapReady || !mapRef.current || !library.length) return;
     drawMarkers(library, taskPoints);
-  }, [library, taskPoints, mapReady]);
+  }, [library, mapReady]);
+
+  // Only update marker icons when taskPoints changes (don't recreate markers)
+  useEffect(() => {
+    if (!mapReady || !markersRef.current.length) return;
+    const pts = taskPoints;
+    markersRef.current.forEach((marker, i) => {
+      const tp = libraryRef.current[i];
+      if (!tp) return;
+      const idx = pts.findIndex(p => p.code === tp.code);
+      const inTask = idx !== -1;
+      const isStart = idx === 0;
+      const isFinish = inTask && idx === pts.length - 1;
+      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : inTask ? '#1a6fba' : '#94a3b8';
+      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '';
+      marker.setIcon(makeIcon(color, label));
+    });
+    // Update route line
+    if (routeRef.current) { mapRef.current.removeLayer(routeRef.current); routeRef.current = null; }
+    if (pts.length >= 2 && window.L) {
+      routeRef.current = window.L.polyline(pts.map(p => [p.lat, p.lon]), { color:'#d97706', weight:3, dashArray:'8 6' }).addTo(mapRef.current);
+    }
+  }, [taskPoints, mapReady]);
 
   function makeIcon(color, label) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.5 0 10C0 17.5 10 26 10 26S20 17.5 20 10C20 4.5 15.5 0 10 0Z" fill="${color}" stroke="white" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="${label.length>1?'7':'10'}" font-weight="bold" fill="white" font-family="Arial,sans-serif">${label}</text></svg>`;
