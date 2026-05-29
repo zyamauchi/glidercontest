@@ -103,7 +103,9 @@ if (!mapRef.current) { setTimeout(initMap, 200); return; }
   function loadCUP(e) {
     const file = e.target.files[0]; if (!file) return;
     const r = new FileReader();
-    r.onload = ev => setLibrary(parseCUP(ev.target.result));
+    
+r.onload = ev => { const tps = parseCUP(ev.target.result); setLibrary(tps); setTimeout(() => renderMarkers(), 300); };
+
     r.readAsText(file);
   }
 
