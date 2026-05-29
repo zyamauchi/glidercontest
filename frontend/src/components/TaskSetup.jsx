@@ -5,7 +5,7 @@ import { Card, SectionTitle, Field, Input, Select, Btn, C } from './ui';
 const DEFAULT_SETTINGS = { startWindowMins:5, permissiveWindow:true, startType:'line', startRadius:1, finishType:'cylinder', finishRadius:1, startCeilingFt:'', minFinishAltFt:1280, maxAltitudeFt:17500, maxTimeFactor:1.5 };
 
 export default function TaskSetup({ contest, tasks, onUpdate }) {
-  const [library, setLibrary] = useState([]);
+  const [library, setLibrary] = useState(contest.turnpoints || []);
   const [taskPoints, setTaskPoints] = useState([]);
   const [form, setForm] = useState({ date:'', gate_open:'12:00', ...DEFAULT_SETTINGS });
   const [editTask, setEditTask] = useState(null);
@@ -93,12 +93,14 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
       const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : isTp ? '#1a6fba' : '#94a3b8';
       const label = isStart ? 'S' : isFinish ? 'F' : isTp ? String(idx) : '';
       const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
-
-     
-marker.on('click', () => {
-        setTaskPoints(prev => [...prev, { ...tp, radiusType:'handicapped', radius:1 }]);
+      marker.on('click', () => {
+        setTaskPoints(prev => {
+          const alreadyIn = prev.findIndex(p => p.lat === tp.lat && p.lon === tp.lon) !== -1;
+          if (alreadyIn) return prev.filter(p => p.code !== tp.code);
+          if (alreadyIn) return prev.filter(p => !(p.lat === tp.lat && p.lon === tp.lon));
+          return [...prev, { ...tp, radiusType:'handicapped', radius:1 }];
+        });
       });
-       
       marker.bindTooltip(`${tp.code}: ${tp.name}`, { direction:'top' });
       marker.addTo(map);
       markersRef.current.push(marker);
@@ -115,6 +117,8 @@ marker.on('click', () => {
     reader.onload = ev => {
       const tps = parseCUP(ev.target.result);
       setLibrary(tps);
+      // Save turnpoints to contest so they reload automatically
+      apiFetch(`/contests/${contest.id}`, { method:'PUT', body:{ turnpoints: tps } }).catch(console.error);
       setTimeout(() => {
         const map = mapRef.current;
         if (map && tps.length && window.L) {
@@ -239,8 +243,29 @@ marker.on('click', () => {
               <Field label="Gate Opens"><Input type="time" value={form.gate_open} onChange={v=>setForm(f=>({...f,gate_open:v}))} /></Field>
               <Field label="Window (mins)"><Input type="number" value={form.startWindowMins} onChange={v=>setForm(f=>({...f,startWindowMins:v}))} /></Field>
               <Field label="Max Time Factor"><Input type="number" step="0.05" value={form.maxTimeFactor} onChange={v=>setForm(f=>({...f,maxTimeFactor:v}))} /></Field>
+              <Field label="Start Type">
+                <Select value={form.startType} onChange={v=>setForm(f=>({...f,startType:v}))} options={[{value:'line',label:'Start Line'},{value:'cylinder',label:'Cylinder'}]} />
+              </Field>
+              <Field label="Start Radius (nm)">
+                <Input type="number" step="0.1" value={form.startRadius} onChange={v=>setForm(f=>({...f,startRadius:v}))} disabled={form.startType==='line'} />
+              </Field>
+              <Field label="Finish Type">
+                <Select value={form.finishType} onChange={v=>setForm(f=>({...f,finishType:v}))} options={[{value:'cylinder',label:'Cylinder'},{value:'line',label:'Finish Line'}]} />
+              </Field>
+              <Field label="Finish Radius (nm)">
+                <Input type="number" step="0.1" value={form.finishRadius} onChange={v=>setForm(f=>({...f,finishRadius:v}))} />
+              </Field>
+              <Field label="Start Ceiling (ft)" hint="optional">
+                <Input type="number" value={form.startCeilingFt} onChange={v=>setForm(f=>({...f,startCeilingFt:v}))} placeholder="none" />
+              </Field>
               <Field label="Min Finish Alt (ft)"><Input type="number" value={form.minFinishAltFt} onChange={v=>setForm(f=>({...f,minFinishAltFt:v}))} /></Field>
               <Field label="Max Altitude (ft)"><Input type="number" value={form.maxAltitudeFt} onChange={v=>setForm(f=>({...f,maxAltitudeFt:v}))} /></Field>
+              <Field label="Permissive Window">
+                <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:8 }}>
+                  <input type="checkbox" checked={!!form.permissiveWindow} onChange={e=>setForm(f=>({...f,permissiveWindow:e.target.checked}))} style={{ accentColor:'#1a6fba', width:15, height:15 }} />
+                  <span style={{ fontSize:12 }}>Enabled</span>
+                </div>
+              </Field>
             </div>
           </Card>
 
