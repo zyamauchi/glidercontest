@@ -12,6 +12,8 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   const [tpSearch, setTpSearch] = useState('');
   const [mapMode, setMapMode] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [showUnselected, setShowUnselected] = useState(true);
+  const circlesRef = useRef([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const fileRef = useRef();
@@ -45,31 +47,14 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   // Draw markers when library loads
   useEffect(() => {
     if (!mapReady || !mapRef.current || !library.length) return;
-    drawMarkers(library, taskPoints);
+    drawMarkers(library, taskPoints, showUnselected);
   }, [library, mapReady]);
 
-  // Only update marker icons when taskPoints changes (don't recreate markers)
+  // Redraw fully when taskPoints or showUnselected changes
   useEffect(() => {
-    if (!mapReady || !markersRef.current.length) return;
-    const pts = taskPoints;
-    markersRef.current.forEach((marker, i) => {
-      const tp = libraryRef.current[i];
-      if (!tp) return;
-      const taskIdx = pts.findIndex(p => p.lat === tp.lat && p.lon === tp.lon);
-      const inTask = taskIdx !== -1;
-      const isStart = inTask && taskIdx === 0;
-      const isFinish = inTask && taskIdx === pts.length - 1 && pts.length > 1;
-      const isTp = inTask && !isStart && !isFinish;
-      const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : isTp ? '#1a6fba' : '#94a3b8';
-      const label = isStart ? 'S' : isFinish ? 'F' : isTp ? String(taskIdx) : '';
-      marker.setIcon(makeIcon(color, label));
-    });
-    // Update route line
-    if (routeRef.current) { mapRef.current.removeLayer(routeRef.current); routeRef.current = null; }
-    if (pts.length >= 2 && window.L) {
-      routeRef.current = window.L.polyline(pts.map(p => [p.lat, p.lon]), { color:'#d97706', weight:3, dashArray:'8 6' }).addTo(mapRef.current);
-    }
-  }, [taskPoints, mapReady]);
+    if (!mapReady || !library.length) return;
+    drawMarkers(library, taskPoints, showUnselected);
+  }, [taskPoints, showUnselected, mapReady]);
 
   function makeIcon(color, label) {
     const textEl = label ? `<text x="10" y="14" text-anchor="middle" font-size="${label.length>1?'7':'10'}" font-weight="bold" fill="white" font-family="Arial,sans-serif">${label}</text>` : '';
@@ -205,6 +190,11 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
         )}
         {library.length > 0 && !mapMode && (
           <Input value={tpSearch} onChange={setTpSearch} placeholder="Search..." style={{width:180}} />
+        )}
+        {library.length > 0 && mapMode && (
+          <button onClick={()=>setShowUnselected(s=>!s)} style={{ padding:'5px 14px', borderRadius:6, border:`1.5px solid ${C.cloudEdge}`, background:showUnselected?C.skyTop:'transparent', color:showUnselected?'white':C.navyLight, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            {showUnselected ? '👁 All Turnpoints' : '👁 Task Only'}
+          </button>
         )}
       </div>
 
