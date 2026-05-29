@@ -11,49 +11,49 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   const [editTask, setEditTask] = useState(null);
   const [tpSearch, setTpSearch] = useState('');
   const [mapMode, setMapMode] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const fileRef = useRef();
+  const mapDivRef = useRef(null);
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const routeRef = useRef(null);
-  const libraryRef = useRef([]);
   const taskPointsRef = useRef([]);
 
-  useEffect(() => { libraryRef.current = library; }, [library]);
   useEffect(() => { taskPointsRef.current = taskPoints; }, [taskPoints]);
 
-  // Init map once
-  useEffect(() => 
-useEffect(() => {
-    if (!mapRef.current) return;
-    if (mapInstanceRef.current) return;
-    if (!window.L) return;
-    const map = window.L.map(mapRef.current).setView([36.9, -120.1], 8);
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
-    mapInstanceRef.current = map;
-  });
-
-
-  // Redraw markers whenever library or taskPoints change
+  // Initialize map when div is available
   useEffect(() => {
-    if (mapInstanceRef.current && library.length) {
-      drawMarkers(library, taskPoints);
+    if (!mapDivRef.current || mapRef.current || !window.L) return;
+    const L = window.L;
+    try {
+      const map = L.map(mapDivRef.current, { preferCanvas: true }).setView([36.9, -120.1], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      mapRef.current = map;
+      setMapReady(true);
+    } catch(e) {
+      console.error('Map init error:', e);
     }
-  }, [library, taskPoints]);
+  }, [mapMode]); // re-run when switching to map mode
+
+  // Redraw markers when library or taskPoints change
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !library.length) return;
+    drawMarkers(library, taskPoints);
+  }, [library, taskPoints, mapReady]);
 
   function makeIcon(color, label) {
-    const L = window.L;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="26" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.5 0 10C0 17.5 10 26 10 26S20 17.5 20 10C20 4.5 15.5 0 10 0Z" fill="${color}" stroke="white" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="${label.length>1?'7':'10'}" font-weight="bold" fill="white" font-family="Arial,sans-serif">${label}</text></svg>`;
-    return L.divIcon({ className:'', html:svg, iconSize:[20,26], iconAnchor:[10,26], popupAnchor:[0,-26] });
+    return window.L.divIcon({ className:'', html:svg, iconSize:[20,26], iconAnchor:[10,26], popupAnchor:[0,-26] });
   }
 
   function drawMarkers(lib, pts) {
-    const L = window.L, map = mapInstanceRef.current;
+    const L = window.L, map = mapRef.current;
     if (!L || !map) return;
-
-    // Remove old markers and route
     markersRef.current.forEach(m => map.removeLayer(m));
     markersRef.current = [];
     if (routeRef.current) { map.removeLayer(routeRef.current); routeRef.current = null; }
@@ -64,10 +64,8 @@ useEffect(() => {
       const isStart = idx === 0;
       const isFinish = inTask && idx === pts.length - 1;
       const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : inTask ? '#1a6fba' : '#94a3b8';
-      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '•';
-      const icon = makeIcon(color, label);
-
-      const marker = L.marker([tp.lat, tp.lon], { icon, title: tp.code });
+      const label = isStart ? 'S' : isFinish ? 'F' : inTask ? String(idx) : '·';
+      const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
       marker.on('click', () => {
         const cur = taskPointsRef.current;
         const alreadyIn = cur.findIndex(p => p.code === tp.code) !== -1;
@@ -77,35 +75,31 @@ useEffect(() => {
           setTaskPoints(prev => [...prev, { ...tp, radiusType:'handicapped', radius:1 }]);
         }
       });
-      marker.bindTooltip(`${tp.code}: ${tp.name}`, { permanent:false, direction:'top' });
+      marker.bindTooltip(`${tp.code}: ${tp.name}`, { direction:'top' });
       marker.addTo(map);
       markersRef.current.push(marker);
     });
 
-    // Draw route line
     if (pts.length >= 2) {
-      routeRef.current = L.polyline(pts.map(p => [p.lat, p.lon]), {
-        color:'#d97706', weight:3, dashArray:'8 6'
-      }).addTo(map);
+      routeRef.current = L.polyline(pts.map(p => [p.lat, p.lon]), { color:'#d97706', weight:3, dashArray:'8 6' }).addTo(map);
     }
   }
 
   function loadCUP(e) {
     const file = e.target.files[0]; if (!file) return;
-    const r = new FileReader();
-    r.onload = ev => {
+    const reader = new FileReader();
+    reader.onload = ev => {
       const tps = parseCUP(ev.target.result);
       setLibrary(tps);
-      // Fit map to turnpoints after a short delay
       setTimeout(() => {
-        const map = mapInstanceRef.current;
+        const map = mapRef.current;
         if (map && tps.length && window.L) {
           map.invalidateSize();
           map.fitBounds(window.L.latLngBounds(tps.map(t => [t.lat, t.lon])), { padding:[30,30] });
         }
-      }, 200);
+      }, 300);
     };
-    r.readAsText(file);
+    reader.readAsText(file);
   }
 
   function parseCUP(text) {
@@ -187,14 +181,16 @@ useEffect(() => {
 
       <div style={{ display:'grid', gridTemplateColumns: mapMode && library.length ? '1fr 380px' : '1fr', gap:20 }}>
 
-        {mapMode && library.length ? (
-          <div>
-            <div style={{ fontSize:12, color:C.navyFaint, marginBottom:6 }}>
-              Click a pin to add it to the task. Click again to remove.
-            </div>
-            <div ref={mapRef} style={{ width:'100%', height:560, borderRadius:10, border:`1.5px solid ${C.cloudEdge}`, overflow:'hidden' }} />
+        {/* Map — always rendered so ref is stable, hidden when not in map mode */}
+        <div style={{ display: mapMode && library.length ? 'block' : 'none' }}>
+          <div style={{ fontSize:12, color:C.navyFaint, marginBottom:6 }}>
+            Click a pin to add it to the task. Click again to remove.
           </div>
-        ) : library.length ? (
+          <div ref={mapDivRef} style={{ width:'100%', height:'560px', borderRadius:10, border:`1.5px solid ${C.cloudEdge}`, overflow:'hidden' }} />
+        </div>
+
+        {/* List view */}
+        {!mapMode && library.length > 0 && (
           <Card style={{ padding:12 }}>
             <div style={{ maxHeight:500, overflowY:'auto' }}>
               {filtered.slice(0,150).map((tp,i) => (
@@ -208,7 +204,7 @@ useEffect(() => {
               ))}
             </div>
           </Card>
-        ) : null}
+        )}
 
         <div>
           <SectionTitle>{editTask ? 'Editing Task' : 'New Task Day'}</SectionTitle>
@@ -253,13 +249,11 @@ useEffect(() => {
                 <Btn small variant="danger" onClick={()=>removeTP(i)} style={{ padding:'3px 7px' }}>✕</Btn>
               </div>
             ))}
-
             {msg && (
               <div style={{ marginTop:8, padding:'8px 12px', background:msg.includes('saved')?'#d1fae5':'#fef3c7', borderRadius:6, fontSize:12, color:msg.includes('saved')?C.green:C.orange }}>
                 {msg}
               </div>
             )}
-
             <div style={{ marginTop:12, display:'flex', gap:10 }}>
               <Btn onClick={saveTask} disabled={saving || !form.date || taskPoints.length < 2}>
                 {saving ? 'Saving...' : editTask ? 'Update Task' : 'Save Task Day'}
