@@ -47,13 +47,13 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
   // Draw markers when library loads
   useEffect(() => {
     if (!mapReady || !mapRef.current || !library.length) return;
-    drawMarkers(library, taskPoints, showUnselected);
+    drawMarkers(library, taskPoints, showUnselected, form);
   }, [library, mapReady]);
 
   // Redraw fully when taskPoints or showUnselected changes
   useEffect(() => {
     if (!mapReady || !library.length) return;
-    drawMarkers(library, taskPoints, showUnselected);
+    drawMarkers(library, taskPoints, showUnselected, form);
   }, [taskPoints, showUnselected, mapReady]);
 
   function makeIcon(color, label) {
@@ -152,7 +152,7 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
     if (!form.date || taskPoints.length < 2) return setMsg('Date and at least 2 task points required');
     setSaving(true); setMsg('');
     try {
-      const settings = { startWindowMins:form.startWindowMins, permissiveWindow:form.permissiveWindow, startType:form.startType, startRadius:form.startRadius, finishType:form.finishType, finishRadius:form.finishRadius, startCeilingFt:form.startCeilingFt, minFinishAltFt:form.minFinishAltFt, maxAltitudeFt:form.maxAltitudeFt, maxTimeFactor:form.maxTimeFactor };
+      const settings = { startWindowMins:form.startWindowMins, permissiveWindow:form.permissiveWindow, startType:settings?.startType, startRadius:settings?.startRadius, finishType:settings?.finishType, finishRadius:settings?.finishRadius, startCeilingFt:form.startCeilingFt, minFinishAltFt:form.minFinishAltFt, maxAltitudeFt:form.maxAltitudeFt, maxTimeFactor:form.maxTimeFactor };
       if (editTask) {
         await apiFetch(`/tasks/${editTask}`, { method:'PUT', body:{ date:form.date, gate_open:form.gate_open, task_points:taskPoints, settings }});
       } else {
@@ -234,16 +234,16 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
               <Field label="Window (mins)"><Input type="number" value={form.startWindowMins} onChange={v=>setForm(f=>({...f,startWindowMins:v}))} /></Field>
               <Field label="Max Time Factor"><Input type="number" step="0.05" value={form.maxTimeFactor} onChange={v=>setForm(f=>({...f,maxTimeFactor:v}))} /></Field>
               <Field label="Start Type">
-                <Select value={form.startType} onChange={v=>setForm(f=>({...f,startType:v}))} options={[{value:'line',label:'Start Line'},{value:'cylinder',label:'Cylinder'}]} />
+                <Select value={settings?.startType} onChange={v=>setForm(f=>({...f,startType:v}))} options={[{value:'line',label:'Start Line'},{value:'cylinder',label:'Cylinder'}]} />
               </Field>
               <Field label="Start Radius (nm)">
-                <Input type="number" step="0.1" value={form.startRadius} onChange={v=>setForm(f=>({...f,startRadius:v}))} disabled={form.startType==='line'} />
+                <Input type="number" step="0.1" value={settings?.startRadius} onChange={v=>setForm(f=>({...f,startRadius:v}))} disabled={settings?.startType==='line'} />
               </Field>
               <Field label="Finish Type">
-                <Select value={form.finishType} onChange={v=>setForm(f=>({...f,finishType:v}))} options={[{value:'cylinder',label:'Cylinder'},{value:'line',label:'Finish Line'}]} />
+                <Select value={settings?.finishType} onChange={v=>setForm(f=>({...f,finishType:v}))} options={[{value:'cylinder',label:'Cylinder'},{value:'line',label:'Finish Line'}]} />
               </Field>
               <Field label="Finish Radius (nm)">
-                <Input type="number" step="0.1" value={form.finishRadius} onChange={v=>setForm(f=>({...f,finishRadius:v}))} />
+                <Input type="number" step="0.1" value={settings?.finishRadius} onChange={v=>setForm(f=>({...f,finishRadius:v}))} />
               </Field>
               <Field label="Start Ceiling (ft)" hint="optional">
                 <Input type="number" value={form.startCeilingFt} onChange={v=>setForm(f=>({...f,startCeilingFt:v}))} placeholder="none" />
