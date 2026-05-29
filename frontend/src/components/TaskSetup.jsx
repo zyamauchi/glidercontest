@@ -93,14 +93,12 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
       const color = isStart ? '#16a34a' : isFinish ? '#dc2626' : isTp ? '#1a6fba' : '#94a3b8';
       const label = isStart ? 'S' : isFinish ? 'F' : isTp ? String(idx) : '';
       const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
-      marker.on('click', () => {
-        setTaskPoints(prev => {
-          const alreadyIn = prev.findIndex(p => p.lat === tp.lat && p.lon === tp.lon) !== -1;
-          if (alreadyIn) return prev.filter(p => p.code !== tp.code);
-          if (alreadyIn) return prev.filter(p => !(p.lat === tp.lat && p.lon === tp.lon));
-          return [...prev, { ...tp, radiusType:'handicapped', radius:1 }];
-        });
+
+     
+marker.on('click', () => {
+        setTaskPoints(prev => [...prev, { ...tp, radiusType:'handicapped', radius:1 }]);
       });
+       
       marker.bindTooltip(`${tp.code}: ${tp.name}`, { direction:'top' });
       marker.addTo(map);
       markersRef.current.push(marker);
