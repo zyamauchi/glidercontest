@@ -55,7 +55,7 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
     markersRef.current.forEach((marker, i) => {
       const tp = libraryRef.current[i];
       if (!tp) return;
-      const taskIdx = pts.findIndex(p => p.code === tp.code);
+      const taskIdx = pts.findIndex(p => p.lat === tp.lat && p.lon === tp.lon);
       const inTask = taskIdx !== -1;
       const isStart = inTask && taskIdx === 0;
       const isFinish = inTask && taskIdx === pts.length - 1 && pts.length > 1;
@@ -95,8 +95,9 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
       const marker = L.marker([tp.lat, tp.lon], { icon: makeIcon(color, label), title: tp.code });
       marker.on('click', () => {
         setTaskPoints(prev => {
-          const alreadyIn = prev.findIndex(p => p.code === tp.code) !== -1;
+          const alreadyIn = prev.findIndex(p => p.lat === tp.lat && p.lon === tp.lon) !== -1;
           if (alreadyIn) return prev.filter(p => p.code !== tp.code);
+          if (alreadyIn) return prev.filter(p => !(p.lat === tp.lat && p.lon === tp.lon));
           return [...prev, { ...tp, radiusType:'handicapped', radius:1 }];
         });
       });
@@ -143,7 +144,8 @@ export default function TaskSetup({ contest, tasks, onUpdate }) {
       let lat = latD + latM/60, lon = lonD + lonM/60;
       if (latH === 'S') lat = -lat;
       if (lonH === 'W') lon = -lon;
-      tps.push({ name, code, lat, lon, elev: parseFloat((p[5]||'0').replace(/[^0-9.]/g,''))||0 });
+      const finalCode = code || name;
+      tps.push({ name, code: finalCode, lat, lon, elev: parseFloat((p[5]||'0').replace(/[^0-9.]/g,''))||0 });
     }
     return tps;
   }
